@@ -11,12 +11,13 @@ mkdir -p iso
 pushd iso
 	base_url="${MIRROR}/releases/${ARCH}/autobuilds"
 
-	latest_iso=$(curl "${base_url}/latest-iso.txt" 2>/dev/null | grep -v '#')
+	latest_iso=$(curl "${base_url}/latest-iso.txt" 2>/dev/null | grep -v '#' | grep "install.*minimal" | cut -d ' ' -f1 | head -n1)
 	iso=$(basename "${latest_iso}")
+	test "${latest_iso}" || die "Could not determine download iso"
 
-	wget -nc "${base_url}/${latest_iso}" || die "Could not download iso"
-	wget -nc "${base_url}/${latest_iso}.DIGESTS.asc" || die "Could not download digests"
-	wget -nc "${base_url}/${latest_iso}.CONTENTS" || die "Could not download contents"
+	test -f "${latest_iso}" || wget -nc "${base_url}/${latest_iso}" || die "Could not download iso"
+	test -f "${latest_iso}.DIGESTS.asc" || wget -nc "${base_url}/${latest_iso}.DIGESTS.asc" || die "Could not download digests"
+	test -f "${latest_iso}.CONTENTS" || wget -nc "${base_url}/${latest_iso}.CONTENTS" || die "Could not download contents"
 	sha512_digests=$(grep -A1 SHA512 "${iso}.DIGESTS.asc" | grep -v '^--')
 	gpg --verify "${iso}.DIGESTS.asc" || die "Insecure digests"
 	echo "${sha512_digests}" | sha512sum -c || die "Checksum validation failed"
